@@ -1,24 +1,19 @@
 # Web Framework
-fastapi==0.115.0
-uvicorn[standard]==0.30.0
-websockets==12.0
-pydantic==2.9.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0
+pydantic>=2.9.0
 
-# Audio Processing (for future use)
-# librosa==0.10.2
-# soundfile==0.12.1
-# numpy==1.26.4
-# scipy==1.13.1
+# Audio Processing
+librosa>=0.10.2
+soundfile>=0.12.1
+numpy>=1.26.4
+scipy>=1.13.1
 
-# ML (for future use)
-# tensorflow==2.16.1
-# scikit-learn==1.5.1
-# onnx==1.16.1
-
-# Infrastructure (for future use)
-# redis==5.0.8
-# prometheus-client==0.21.0
+# ML — Custom CNN
+tensorflow>=2.16.1
+scikit-learn>=1.5.1
 
 # Dev Tools
-pytest==8.3.2
-black==24.8.0
+pytest>=8.3.2
+black>=24.8.0

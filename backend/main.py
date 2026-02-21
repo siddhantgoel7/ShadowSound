@@ -1,21 +1,44 @@
 """
 Shadow-Sound Backend — FastAPI Application
-Mock endpoints for frontend development and integration testing.
+Audio classification service powered by YAMNet.
 """
 
+import base64
 import time
 import json
 import uuid
 import random
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
+from classifier import SoundClassifier
+
+# ── Load classifier on startup ────────────────────────────────────────────
+
+classifier: SoundClassifier | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global classifier
+    try:
+        classifier = SoundClassifier()
+    except Exception as exc:
+        print(f"[server] Could not load model: {exc}")
+        print("[server] Running in MOCK mode — connect to /ws/audio?mock=true or any request will use mock.")
+        classifier = None
+    yield
+    classifier = None
+
+
 app = FastAPI(
     title="Shadow-Sound API",
     description="Directional Haptic Feedback System — Audio Classification Service",
-    version="0.1.0",
+    version="0.2.0",
+    lifespan=lifespan,
 )
 
 # -- CORS (allow the React Native app to connect) --
@@ -118,17 +141,21 @@ def _mock_detection():
 # ---------------------------------------------------------------------------
 
 @app.websocket("/ws/audio")
-async def websocket_audio(ws: WebSocket):
+async def websocket_audio(ws: WebSocket, mock: bool = Query(False)):
     """
-    Accepts audio chunks over WebSocket and returns mock detection results.
+    Accepts audio chunks over WebSocket and returns detection results.
+
+    Pass ?mock=true to use random mock detections instead of the real model
+    (useful for frontend development without a mic).
 
     Protocol:
       1. Client sends an auth message:  {"type": "auth", "device_id": "...", "api_version": "1.0"}
-      2. Client sends audio chunks:     {"type": "audio_chunk", "timestamp": ..., ...}
+      2. Client sends audio chunks:     {"type": "audio_chunk", "audio_data": "<base64>", "sample_rate": 16000}
       3. Server responds with detections after each chunk.
     """
     await ws.accept()
     device_id: Optional[str] = None
+    use_mock = mock or classifier is None
 
     try:
         while True:
@@ -138,26 +165,37 @@ async def websocket_audio(ws: WebSocket):
             # --- Auth handshake ---
             if msg.get("type") == "auth":
                 device_id = msg.get("device_id", "unknown")
+                mode_label = "mock" if use_mock else "live"
                 await ws.send_json({
                     "type": "auth_ok",
-                    "message": f"Device {device_id} authenticated (mock).",
+                    "message": f"Device {device_id} authenticated ({mode_label}).",
                 })
                 continue
 
-            # --- Audio chunk processing (mock) ---
+            # --- Audio chunk processing ---
             if msg.get("type") == "audio_chunk":
-                # Simulate processing latency
                 processing_start = time.time()
 
-                # Generate 1-3 random mock detections
-                num_detections = random.randint(1, 3)
-                raw_detections = [_mock_detection() for _ in range(num_detections)]
+                if use_mock:
+                    # Mock path — random detections for frontend testing
+                    num_detections = random.randint(1, 3)
+                    detections = [_mock_detection() for _ in range(num_detections)]
+                else:
+                    # Real path — decode base64 audio and classify
+                    audio_b64 = msg.get("audio_data", "")
+                    sample_rate = msg.get("sample_rate", 16000)
 
-                # Apply confidence threshold — drop anything below 85%
-                detections = [
-                    d for d in raw_detections
-                    if d["confidence"] >= CONFIDENCE_THRESHOLD
-                ]
+                    try:
+                        audio_bytes = base64.b64decode(audio_b64)
+                    except Exception:
+                        await ws.send_json({
+                            "type": "error",
+                            "message": "Invalid base64 audio_data",
+                        })
+                        continue
+
+                    result = classifier.classify(audio_bytes, sample_rate)
+                    detections = [result] if result else []
 
                 processing_ms = round((time.time() - processing_start) * 1000, 1)
 
