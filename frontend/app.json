@@ -9,9 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "ShadowSound listens for safety sounds around you."
+      }
     },
     "android": {
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/no_image.png",
@@ -27,6 +33,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-av",
       [
         "expo-splash-screen",
         {
