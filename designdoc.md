@@ -9,7 +9,7 @@ A React Native app (iOS + Android) that listens to the environment, detects crit
 **Stack:**
 - React Native (iOS + Android)
 - Python + FastAPI backend (WebSocket)
-- Pre-trained audio classification model
+- Custom trained audio classification model
 
 ---
 
@@ -23,7 +23,7 @@ Deaf and hard-of-hearing people can't hear approaching cars, sirens, or people s
 
 1. App continuously captures audio via the phone mic
 2. Audio chunks are streamed to a Python backend
-3. Backend classifies the sound using a pre-trained ML model
+3. Backend classifies the sound using a trained ML model
 4. Result (sound type + urgency) is sent back to the app
 5. App triggers a haptic vibration pattern to alert the user
 
@@ -37,7 +37,7 @@ Phone (React Native)
   └── streams via WebSocket →
 
 Python Backend (FastAPI)
-  └── classifies sound (pre-trained model)
+  └── classifies sound
   └── returns: sound_type, urgency, haptic_pattern →
 
 Phone (React Native)
@@ -54,7 +54,7 @@ Phone (React Native)
 - [ ] React Native app with mic capture (foreground only, no background needed for demo)
 - [ ] WebSocket connection to Python backend
 - [ ] FastAPI server that accepts audio chunks
-- [ ] Pre-trained sound classifier (use YAMNet or PANNs — don't train from scratch)
+- [ ] Custom trained sound classifier
 - [ ] Return JSON response to app
 - [ ] Trigger phone vibration on detection
 
@@ -69,8 +69,6 @@ Phone (React Native)
 ---
 
 ## Tech Choices
-
-**Why pre-trained model?** YAMNet (Google) runs fast, covers 521 sound classes, and needs zero training time. We'll just map its output to our 5 priority categories.
 
 **Why WebSocket?** Simpler than chunked HTTP for real-time streaming. FastAPI supports it natively.
 
@@ -100,7 +98,7 @@ Phone (React Native)
 
 **Python:**
 - `fastapi` + `uvicorn` — WebSocket server
-- `tensorflow` + `tensorflow_hub` — YAMNet inference
+- `tensorflow` + `tensorflow_hub` — model inference
 - `librosa` / `numpy` — audio preprocessing
 
 ---
@@ -163,7 +161,6 @@ If nothing detected above threshold (85%), backend returns `null` and app does n
 - Direction estimation (TDOA/mic array) — post-hackathon
 - Background mode / always-on listening — post-hackathon
 - User accounts, settings, history — post-hackathon
-- Model training — using YAMNet as-is
 - Production deployment — localhost backend for demo
 
 ---
@@ -172,7 +169,6 @@ If nothing detected above threshold (85%), backend returns `null` and app does n
 
 | Risk | Fix |
 |------|-----|
-| YAMNet too slow on server | Quantize model or use ONNX runtime |
 | WebSocket drops | Simple reconnect loop in app |
 | Mic permission denied on test device | Prepare fallback with pre-recorded audio file |
 | Haptic feels wrong | Test on real device early — simulators don't vibrate |
@@ -192,7 +188,7 @@ shadow-sound/
 │   └── package.json
 └── backend/              # Python
     ├── main.py           # FastAPI app + WebSocket endpoint
-    ├── classifier.py     # YAMNet wrapper
+    ├── classifier.py     # model wrapper
     └── requirements.txt
 ```
 
