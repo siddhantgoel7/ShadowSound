@@ -77,5 +77,9 @@
     "ts-jest": "^29.4.6",
     "typescript": "~5.9.3"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "minimatch": ">=10.2.1",
+    "glob": ">=11.0.0"
+  }
 }
