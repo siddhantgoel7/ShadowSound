@@ -50,28 +50,42 @@ Phone (React Native)
 
 ## Tasks
 
-### Backend
-- [ ] Init FastAPI app with WebSocket endpoint (`/ws/audio`)
-- [ ] Load and set up trained classifier (`classifier.py`)
+### Project Setup
+- [ ] Init React Native project, install dependencies
+- [ ] Init Python backend, set up `requirements.txt`
+- [ ] Connect phone and confirm real device runs RN app
+
+### Audio Capture
+- [ ] Request mic permission on app launch (`react-native-permissions`)
+- [ ] Capture audio in 1–2s chunks (`react-native-audio-recorder-player`)
+- [ ] Base64 encode chunks and buffer for sending
+
+### Sound Classification
+- [ ] Set up FastAPI WebSocket endpoint (`/ws/audio`)
+- [ ] Load trained classifier in `classifier.py`
 - [ ] Decode base64 audio, resample to 16kHz with `librosa`
 - [ ] Run inference, map output to 5 sound categories
-- [ ] Return `{ sound_type, confidence, urgency, haptic_pattern }` or `null` if below 85% threshold
-- [ ] Test endpoint with a local audio file
+- [ ] Return `{ sound_type, confidence, urgency, haptic_pattern }` or `null` below 85% threshold
 
-### React Native App
-- [ ] Init RN project, install dependencies
-- [ ] Request mic permission on launch (`react-native-permissions`)
-- [ ] Capture audio in 1–2s chunks (`react-native-audio-recorder-player`)
-- [ ] Base64 encode and send chunks over WebSocket
-- [ ] Parse response and trigger haptic pattern (`react-native-haptic-feedback`)
-- [ ] Build home screen: status indicator, last detected sound, recent alerts log
+### Real-time Pipeline
+- [ ] Send audio chunks from app to backend over WebSocket
+- [ ] Parse response in app and route to haptic engine
 - [ ] Handle WebSocket reconnect on drop
 
-### Integration & Demo
-- [ ] Test pipeline end-to-end on real device (simulators don't vibrate)
-- [ ] Verify all 5 sound categories trigger correct haptic
-- [ ] Confirm <2s detection latency
-- [ ] Prep 3–4 audio clips for demo (siren, horn, shout, alarm)
+### Haptic Feedback
+- [ ] Define vibration pattern per sound category (`react-native-haptic-feedback`)
+- [ ] Trigger correct pattern on detection response
+- [ ] Test all 5 patterns on real device (simulators don't vibrate)
+
+### UI
+- [ ] Home screen: "Listening..." status indicator
+- [ ] Show last detected sound with icon
+- [ ] Recent alerts log (last few detections)
+
+### Demo Prep
+- [ ] Confirm <2s end-to-end latency
+- [ ] Prep 3–4 audio clips (siren, horn, shout, alarm)
+- [ ] Run through full demo flow once end-to-end
 
 ---
 
