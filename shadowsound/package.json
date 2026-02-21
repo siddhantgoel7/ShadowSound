@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint --max-warnings=0",
     "lint:fix": "expo lint --fix && npx prettier --write .",
-    "test": "jest"
+    "test": "jest",
+    "clean": "rm -rf node_modules && npm install"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

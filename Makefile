@@ -40,3 +40,6 @@ lint-fix:
 # Run tests
 test:
 	cd shadowsound && npm run test
+
+clean:
+	cd shadowsound && npm run clean
