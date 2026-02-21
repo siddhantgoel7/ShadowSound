@@ -28,6 +28,12 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+CONFIDENCE_THRESHOLD = 0.85  # Discard detections below 85% confidence
+
+# ---------------------------------------------------------------------------
 # Mock data helpers
 # ---------------------------------------------------------------------------
 
@@ -145,16 +151,31 @@ async def websocket_audio(ws: WebSocket):
 
                 # Generate 1-3 random mock detections
                 num_detections = random.randint(1, 3)
-                detections = [_mock_detection() for _ in range(num_detections)]
+                raw_detections = [_mock_detection() for _ in range(num_detections)]
+
+                # Apply confidence threshold — drop anything below 85%
+                detections = [
+                    d for d in raw_detections
+                    if d["confidence"] >= CONFIDENCE_THRESHOLD
+                ]
 
                 processing_ms = round((time.time() - processing_start) * 1000, 1)
 
-                await ws.send_json({
-                    "type": "detection",
-                    "timestamp": int(time.time()),
-                    "detections": detections,
-                    "processing_time_ms": processing_ms,
-                })
+                if detections:
+                    await ws.send_json({
+                        "type": "detection",
+                        "timestamp": int(time.time()),
+                        "detections": detections,
+                        "processing_time_ms": processing_ms,
+                    })
+                else:
+                    await ws.send_json({
+                        "type": "no_detection",
+                        "timestamp": int(time.time()),
+                        "detections": None,
+                        "processing_time_ms": processing_ms,
+                        "message": "No sounds detected above confidence threshold.",
+                    })
                 continue
 
             # --- Unknown message type ---
