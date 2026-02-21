@@ -4,42 +4,42 @@
 all: lint test
 
 install:
-	cd shadowsound && npm install
+	cd frontend && npm install
 
 build:
-	cd shadowsound && npm run build
+	cd frontend && npm run build
 
 # Start the Expo development server
 start:
-	cd shadowsound && npm run start
+	cd frontend && npm run start
 
 # Reset the project
 reset-project:
-	cd shadowsound && npm run reset-project
+	cd frontend && npm run reset-project
 
 # Start on Android
 android:
-	cd shadowsound && npm run android
+	cd frontend && npm run android
 
 # Start on iOS
 ios:
-	cd shadowsound && npm run ios
+	cd frontend && npm run ios
 
 # Start on Web
 web:
-	cd shadowsound && npm run web
+	cd frontend && npm run web
 
 # Run linting
 lint:
-	cd shadowsound && npm run lint
+	cd frontend && npm run lint
 
 # Run linting with auto-fix + Prettier
 lint-fix:
-	cd shadowsound && npm run lint:fix
+	cd frontend && npm run lint:fix
 
 # Run tests
 test:
-	cd shadowsound && npm run test
+	cd frontend && npm run test
 
 clean:
-	cd shadowsound && npm run clean
+	cd frontend && npm run clean
