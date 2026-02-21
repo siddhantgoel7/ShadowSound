@@ -54,7 +54,7 @@ Phone (React Native)
 - [ ] React Native app with mic capture (foreground only, no background needed for demo)
 - [ ] WebSocket connection to Python backend
 - [ ] FastAPI server that accepts audio chunks
-- [ ] Pre-trained sound classifier (use YAMNet or PANNs — don't train from scratch)
+- [ ] Custom trained sound classifier
 - [ ] Return JSON response to app
 - [ ] Trigger phone vibration on detection
 
