@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shadowsound-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+    # ── Security hardening ──────────────────────────────────────────
+    read_only: true                    # Root filesystem is read-only
+    tmpfs:
+      - /tmp:size=100M                 # Writable temp space (capped)
+    security_opt:
+      - no-new-privileges:true         # Prevent privilege escalation
+    cap_drop:
+      - ALL                            # Drop all Linux capabilities
+    cap_add:
+      - NET_BIND_SERVICE               # Allow binding to port 8000
+
+    # ── Resource limits ─────────────────────────────────────────────
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+        reservations:
+          memory: 512M
+
+    # ── Environment ─────────────────────────────────────────────────
+    environment:
+      - PYTHONUNBUFFERED=1             # Ensure logs stream in real time

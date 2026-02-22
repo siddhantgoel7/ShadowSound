@@ -1,4 +1,5 @@
-.PHONY: start reset-project android ios web lint lint-fix test all
+.PHONY: start reset-project android ios web lint lint-fix test all \
+       docker-build docker-up docker-down docker-logs
 
 # Default target
 all: lint test
@@ -43,3 +44,18 @@ test:
 
 clean:
 	cd frontend && npm run clean
+
+# ── Docker (backend) ────────────────────────────────────────────────────
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f backend
+

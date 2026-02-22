@@ -10,10 +10,11 @@ soundfile>=0.12.1
 numpy>=1.26.4
 scipy>=1.13.1
 
-# ML — Custom CNN
+# ML — YAMNet (pre-trained)
 tensorflow>=2.16.1
-scikit-learn>=1.5.1
+tensorflow-hub>=0.16.1
 
 # Dev Tools
 pytest>=8.3.2
 black>=24.8.0
+

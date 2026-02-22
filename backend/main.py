@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     try:
         classifier = SoundClassifier()
     except Exception as exc:
-        print(f"[server] Could not load model: {exc}")
+        print(f"[server] Could not load YAMNet model: {exc}")
         print("[server] Running in MOCK mode — connect to /ws/audio?mock=true or any request will use mock.")
         classifier = None
     yield
