@@ -10,8 +10,8 @@ WORKDIR /build
 # System libs needed to compile some Python packages (librosa/scipy/numpy)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        build-essential \
-        libsndfile1-dev \
+    build-essential \
+    libsndfile1-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -24,11 +24,12 @@ FROM python:3.12-slim
 LABEL maintainer="ShadowSound Team"
 LABEL description="Shadow-Sound audio classification backend"
 
-# Runtime system dependency for soundfile / librosa
+# Runtime system dependency for soundfile / librosa / pydub (ffmpeg)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        libsndfile1 \
-        curl \
+    libsndfile1 \
+    ffmpeg \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

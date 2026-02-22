@@ -187,6 +187,7 @@ async def websocket_audio(ws: WebSocket, mock: bool = Query(False)):
 
                     try:
                         audio_bytes = base64.b64decode(audio_b64)
+                        print(f"[server] Audio chunk: {len(audio_b64)} b64 chars → {len(audio_bytes)} bytes, header: {audio_bytes[:4].hex() if len(audio_bytes) >= 4 else 'too short'}")
                     except Exception:
                         await ws.send_json({
                             "type": "error",

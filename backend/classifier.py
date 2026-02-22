@@ -45,14 +45,18 @@ _YAMNET_TO_APP: list[tuple[str, str]] = [
     ("Skidding", "tire_screech"),
 
     # Vehicles approaching (engine sounds)
+    ("Vehicle", "vehicle_approaching"),
     ("Engine", "vehicle_approaching"),
     ("Motor vehicle", "vehicle_approaching"),
     ("Car", "vehicle_approaching"),
     ("Truck", "vehicle_approaching"),
     ("Bus", "vehicle_approaching"),
     ("Motorcycle", "vehicle_approaching"),
+    ("Boat", "vehicle_approaching"),
+    ("Motorboat", "vehicle_approaching"),
 
     # Human sounds
+    ("Speech", "shouting"),
     ("Shout", "shouting"),
     ("Yell", "shouting"),
     ("Screaming", "shouting"),
@@ -187,12 +191,22 @@ class SoundClassifier:
         confidence = float(mean_scores[top_idx])
         yamnet_label = self.class_names[top_idx]
 
+        # Debug: log top-3 predictions
+        top3_indices = np.argsort(mean_scores)[-3:][::-1]
+        top3 = [(self.class_names[i], round(float(mean_scores[i]), 3)) for i in top3_indices]
+        print(f"[classifier] YAMNet top-3: {top3}")
+
         # Map to app category
         app_category = self._map_to_app_category(yamnet_label)
 
         if app_category is None or confidence < CONFIDENCE_THRESHOLD:
+            if app_category is None:
+                print(f"[classifier] '{yamnet_label}' not mapped to any app category — skipping")
+            else:
+                print(f"[classifier] '{app_category}' confidence {confidence:.3f} below threshold {CONFIDENCE_THRESHOLD}")
             return None
 
+        print(f"[classifier] ✅ DETECTED: {app_category} ({yamnet_label}) @ {confidence:.3f}")
         return {
             "sound_type": app_category,
             "confidence": round(confidence, 3),
@@ -215,29 +229,53 @@ class SoundClassifier:
     @staticmethod
     def _decode_audio(audio_bytes: bytes, original_sr: int) -> np.ndarray | None:
         """Decode audio bytes → 16 kHz mono float32 waveform in [-1, 1]."""
-        try:
-            import librosa
 
-            waveform, _ = librosa.load(
-                io.BytesIO(audio_bytes), sr=TARGET_SR, mono=True
-            )
-            # librosa already returns float32 in roughly [-1, 1]
-            return waveform.astype(np.float32)
-        except Exception:
-            pass
-
-        # Fallback: try raw PCM int16
+        # Attempt 1: pydub + ffmpeg — handles AAC, MP4, WAV, OGG, etc.
         try:
-            pcm = np.frombuffer(audio_bytes, dtype=np.int16)
+            from pydub import AudioSegment
+
+            audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
+            # Convert to mono 16kHz 16-bit PCM
+            audio = audio.set_channels(1).set_frame_rate(TARGET_SR).set_sample_width(2)
+            pcm = np.frombuffer(audio.raw_data, dtype=np.int16)
             waveform = pcm.astype(np.float32) / 32768.0
+            print(f"[classifier] pydub decoded: {len(waveform)} samples ({len(waveform)/TARGET_SR:.2f}s)")
+            return waveform
+        except Exception as e:
+            print(f"[classifier] pydub decode failed: {e}")
 
-            # Resample if needed
+        # Attempt 2: soundfile — WAV/FLAC/OGG
+        try:
+            import soundfile as sf
+
+            waveform, sr = sf.read(io.BytesIO(audio_bytes), dtype="float32")
+            if waveform.ndim > 1:
+                waveform = waveform.mean(axis=1)
+            if sr != TARGET_SR:
+                import librosa
+                waveform = librosa.resample(waveform, orig_sr=sr, target_sr=TARGET_SR)
+            return waveform.astype(np.float32)
+        except Exception as e:
+            print(f"[classifier] soundfile decode failed: {e}")
+
+        # Attempt 3: raw PCM int16
+        try:
+            trimmed = audio_bytes[:len(audio_bytes) - (len(audio_bytes) % 2)]
+            if len(trimmed) < 2:
+                raise ValueError("Audio data too short for PCM int16")
+            pcm = np.frombuffer(trimmed, dtype=np.int16)
+            waveform = pcm.astype(np.float32) / 32768.0
             if original_sr != TARGET_SR:
                 import librosa
                 waveform = librosa.resample(
                     waveform, orig_sr=original_sr, target_sr=TARGET_SR
                 )
+            print(f"[classifier] Decoded as raw PCM: {len(waveform)} samples")
             return waveform
-        except Exception as exc:
-            print(f"[classifier] Failed to decode audio: {exc}")
-            return None
+        except Exception as e:
+            print(f"[classifier] Raw PCM decode failed: {e}")
+
+        print(f"[classifier] All decode attempts failed for {len(audio_bytes)} bytes")
+        return None
+
+
