@@ -23,23 +23,16 @@ export interface SoundDetectionState {
     startListening: () => Promise<void>;
     /** Stop everything */
     stopListening: () => Promise<void>;
+    /**
+     * Inject a mock detection directly — used by Demo Mode to fire alerts
+     * without needing a real sound or backend connection.
+     */
+    injectMockDetection: (detection: Detection) => void;
 }
 
 /** How many recent detections to keep */
 const MAX_RECENT = 20;
 
-/**
- * Combines audio capture + WebSocket into a single hook.
- *
- * Call `startListening()` to:
- * 1. Connect to the backend WebSocket
- * 2. Start capturing audio chunks from the mic
- * 3. Send each chunk to the backend for classification
- * 4. Receive detection results via callback
- *
- * @param backendUrl  Override the default WebSocket URL (e.g. for a remote server)
- * @param mock        Use mock detections instead of the real model
- */
 export function useSoundDetection(
     backendUrl?: string,
     mock = false,
@@ -58,6 +51,22 @@ export function useSoundDetection(
 
     const chunksSentRef = useRef(0);
 
+    // ── Shared detection handler ─────────────────────────────────────
+
+    const handleDetection = useCallback((detection: Detection) => {
+        setLastDetection(detection);
+        setRecentDetections((prev: Detection[]) =>
+            [detection, ...prev].slice(0, MAX_RECENT)
+        );
+        triggerHaptic(detection.haptic_pattern, detection.urgency);
+    }, []);
+
+    // ── Inject mock detection (demo mode) ────────────────────────────
+
+    const injectMockDetection = useCallback((detection: Detection) => {
+        handleDetection(detection);
+    }, [handleDetection]);
+
     // ── Start the full pipeline ──────────────────────────────────────
 
     const startListening = useCallback(async () => {
@@ -66,39 +75,29 @@ export function useSoundDetection(
             return;
         }
 
-        // Reset state for new session
         chunksSentRef.current = 0;
         setChunksSent(0);
         setLastDetection(null);
         setRecentDetections([]);
 
-        // 1. Connect to backend
         webSocketService.connect(
-            // onDetection callback
             (detections, _processingMs) => {
                 if (detections.length > 0) {
-                    const top = detections[0];
-                    setLastDetection(top);
-                    setRecentDetections((prev: Detection[]) => [top, ...prev].slice(0, MAX_RECENT));
-
-                    // 🔔 Haptic feedback for hearing-impaired users
-                    triggerHaptic(top.haptic_pattern, top.urgency);
+                    handleDetection(detections[0]);
                 }
             },
-            // onConnectionChange callback
             (connected) => {
                 setIsConnected(connected);
             },
             mock,
         );
 
-        // 2. Start audio capture — each chunk is sent over the WebSocket
         await startCapture((base64Chunk) => {
             webSocketService.sendAudioChunk(base64Chunk, 16_000);
             chunksSentRef.current += 1;
             setChunksSent(chunksSentRef.current);
         });
-    }, [hasPermission, startCapture, mock]);
+    }, [hasPermission, startCapture, mock, handleDetection]);
 
     // ── Stop everything ──────────────────────────────────────────────
 
@@ -125,5 +124,6 @@ export function useSoundDetection(
         chunksSent,
         startListening,
         stopListening,
+        injectMockDetection,
     };
 }
