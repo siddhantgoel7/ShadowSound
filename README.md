@@ -215,7 +215,7 @@ Both are already configured in `app.json`.
 
 ## Team
 
-Built by **Chirayu Shah** at HackED 2026 — February 21–22, 2026.
+Built by **Team Hackers** at HackED 2026 — February 21–22, 2026.
 
 ---
 
