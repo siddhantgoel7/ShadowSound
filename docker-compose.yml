@@ -9,15 +9,16 @@ services:
     restart: unless-stopped
 
     # ── Security hardening ──────────────────────────────────────────
-    read_only: true                    # Root filesystem is read-only
+    read_only: true # Root filesystem is read-only
     tmpfs:
-      - /tmp:size=100M                 # Writable temp space (capped)
+      - /tmp:size=100M # Writable temp space (capped)
+      - /tfhub_cache:size=500M # YAMNet model cache
     security_opt:
-      - no-new-privileges:true         # Prevent privilege escalation
+      - no-new-privileges:true # Prevent privilege escalation
     cap_drop:
-      - ALL                            # Drop all Linux capabilities
+      - ALL # Drop all Linux capabilities
     cap_add:
-      - NET_BIND_SERVICE               # Allow binding to port 8000
+      - NET_BIND_SERVICE # Allow binding to port 8000
 
     # ── Resource limits ─────────────────────────────────────────────
     deploy:
@@ -30,4 +31,5 @@ services:
 
     # ── Environment ─────────────────────────────────────────────────
     environment:
-      - PYTHONUNBUFFERED=1             # Ensure logs stream in real time
+      - PYTHONUNBUFFERED=1 # Ensure logs stream in real time
+      - TFHUB_CACHE_DIR=/tfhub_cache # Writable cache for YAMNet model

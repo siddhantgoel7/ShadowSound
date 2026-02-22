@@ -13,6 +13,7 @@ scipy>=1.13.1
 # ML — YAMNet (pre-trained)
 tensorflow>=2.16.1
 tensorflow-hub>=0.16.1
+setuptools>=69.0.0,<71            # tensorflow-hub needs pkg_resources (dropped in v72+)
 
 # Dev Tools
 pytest>=8.3.2

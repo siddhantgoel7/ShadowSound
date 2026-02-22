@@ -45,7 +45,7 @@ export type OnConnectionChangeCallback = (connected: boolean) => void;
 // ── Config ───────────────────────────────────────────────────────────────
 
 /** Default backend URL — change this to your machine's IP for real-device testing */
-const DEFAULT_WS_URL = "ws://192.168.1.23:8000/ws/audio";
+const DEFAULT_WS_URL = "ws://198.53.81.108:54978/ws/audio";
 
 /** How long to wait before reconnecting (ms) */
 const RECONNECT_DELAY_MS = 2000;
