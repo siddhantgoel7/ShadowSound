@@ -5,3 +5,4 @@ export * from "./post.service";
 export * from "./profile.service";
 export * from "./savedPost.service";
 export * from "./comment.service";
+export * from "./websocket.service";

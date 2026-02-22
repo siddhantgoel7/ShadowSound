@@ -54,7 +54,7 @@ export function useAudioCapture(): UseAudioCaptureReturn {
         };
     }, []);
 
-    const startCapture = useCallback(async () => {
+    const startCapture = useCallback(async (externalOnChunk?: (base64: string) => void) => {
         if (!hasPermission) {
             console.warn("[useAudioCapture] Cannot start — no mic permission");
             return;
@@ -69,6 +69,9 @@ export function useAudioCapture(): UseAudioCaptureReturn {
             chunkCountRef.current += 1;
             setLastChunk(base64);
             setChunkCount(chunkCountRef.current);
+
+            // Forward to external callback if provided
+            externalOnChunk?.(base64);
 
             if (__DEV__) {
                 console.log(
