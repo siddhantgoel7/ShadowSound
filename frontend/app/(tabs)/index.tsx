@@ -1,10 +1,9 @@
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { PageContainer } from "@/components/page-container";
 import StatusIndicator from "@/components/ui/StatusIndicator";
 import PermissionGate from "@/components/ui/PermissionGate";
 import Button from "@/components/ui/Button";
-import { useSoundDetection } from "@/hooks/useSoundDetection";
-import type { Detection } from "@/src/services/websocket.service";
+import { useSharedDetection } from "@/contexts/SoundDetectionContext";
 
 // ── Emoji map for sound types ────────────────────────────────────────────
 
@@ -40,11 +39,10 @@ export default function HomeScreen() {
     isListening,
     isConnected,
     lastDetection,
-    recentDetections,
     chunksSent,
     startListening,
     stopListening,
-  } = useSoundDetection(); // real YAMNet classification
+  } = useSharedDetection();
 
   // ── Status indicator state ───────────────────────────────────────
 
@@ -67,26 +65,6 @@ export default function HomeScreen() {
     ? `${isConnected ? "🟢 Connected" : "🔴 Connecting…"} · Chunks: ${chunksSent}`
     : undefined;
 
-  // ── Render a single detection row ────────────────────────────────
-
-  const renderDetection = ({ item }: { item: Detection }) => {
-    const icon = SOUND_ICONS[item.sound_type] ?? "🔊";
-    const color = URGENCY_COLORS[item.urgency] ?? "#555";
-    const label = item.sound_type.replace(/_/g, " ");
-
-    return (
-      <View style={styles.detectionRow}>
-        <Text style={styles.detectionIcon}>{icon}</Text>
-        <View style={styles.detectionInfo}>
-          <Text style={[styles.detectionLabel, { color }]}>{label}</Text>
-          <Text style={styles.detectionMeta}>
-            {(item.confidence * 100).toFixed(0)}% · {item.urgency}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
   return (
     <PageContainer>
       <View style={styles.content}>
@@ -97,23 +75,56 @@ export default function HomeScreen() {
           subtitle={subtitle}
         />
 
-        {/* Last detected sound */}
-        {lastDetection && (
-          <View style={styles.lastDetection}>
-            <Text style={styles.lastDetectionIcon}>
+        {/* Last detected sound — single large card */}
+        {lastDetection ? (
+          <View
+            style={[
+              styles.detectionCard,
+              {
+                borderColor:
+                  URGENCY_COLORS[lastDetection.urgency] ?? "#333",
+              },
+            ]}
+          >
+            <Text style={styles.detectionIcon}>
               {SOUND_ICONS[lastDetection.sound_type] ?? "🔊"}
             </Text>
-            <Text style={[
-              styles.lastDetectionLabel,
-              { color: URGENCY_COLORS[lastDetection.urgency] ?? "#fff" },
-            ]}>
+            <Text
+              style={[
+                styles.detectionLabel,
+                {
+                  color:
+                    URGENCY_COLORS[lastDetection.urgency] ?? "#fff",
+                },
+              ]}
+            >
               {lastDetection.sound_type.replace(/_/g, " ")}
             </Text>
-            <Text style={styles.lastDetectionConfidence}>
+            <Text style={styles.detectionConfidence}>
               {(lastDetection.confidence * 100).toFixed(0)}% confidence
             </Text>
+            <View
+              style={[
+                styles.urgencyBadge,
+                {
+                  backgroundColor:
+                    URGENCY_COLORS[lastDetection.urgency] ?? "#555",
+                },
+              ]}
+            >
+              <Text style={styles.urgencyText}>
+                {lastDetection.urgency?.toUpperCase()}
+              </Text>
+            </View>
           </View>
-        )}
+        ) : isListening ? (
+          <View style={styles.waitingCard}>
+            <Text style={styles.waitingIcon}>👂</Text>
+            <Text style={styles.waitingText}>
+              Listening for sounds…
+            </Text>
+          </View>
+        ) : null}
 
         {/* Start / Stop button */}
         <PermissionGate
@@ -129,20 +140,6 @@ export default function HomeScreen() {
             {isListening ? "Stop Listening" : "Start Listening"}
           </Button>
         </PermissionGate>
-
-        {/* Recent alerts log */}
-        {recentDetections.length > 0 && (
-          <View style={styles.recentContainer}>
-            <Text style={styles.recentTitle}>Recent Alerts</Text>
-            <FlatList
-              data={recentDetections}
-              renderItem={renderDetection}
-              keyExtractor={(_, idx) => idx.toString()}
-              style={styles.recentList}
-              scrollEnabled={true}
-            />
-          </View>
-        )}
       </View>
     </PageContainer>
   );
@@ -158,60 +155,53 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingVertical: 32,
   },
-  lastDetection: {
+  detectionCard: {
     alignItems: "center",
-    paddingVertical: 16,
-  },
-  lastDetectionIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  lastDetectionLabel: {
-    fontSize: 22,
-    fontWeight: "700",
-    textTransform: "capitalize",
-    marginBottom: 4,
-  },
-  lastDetectionConfidence: {
-    fontSize: 14,
-    color: "#999",
-  },
-  recentContainer: {
-    width: "100%",
-    paddingHorizontal: 20,
-    maxHeight: 200,
-  },
-  recentTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#ccc",
-    marginBottom: 8,
-  },
-  recentList: {
-    flexGrow: 0,
-  },
-  detectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#333",
+    paddingVertical: 24,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    width: "85%",
   },
   detectionIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  detectionInfo: {
-    flex: 1,
+    fontSize: 64,
+    marginBottom: 12,
   },
   detectionLabel: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "700",
     textTransform: "capitalize",
+    marginBottom: 6,
+    textAlign: "center",
   },
-  detectionMeta: {
+  detectionConfidence: {
+    fontSize: 14,
+    color: "#999",
+    marginBottom: 12,
+  },
+  urgencyBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  urgencyText: {
     fontSize: 12,
+    fontWeight: "800",
+    color: "#000",
+    letterSpacing: 1,
+  },
+  waitingCard: {
+    alignItems: "center",
+    paddingVertical: 32,
+    opacity: 0.6,
+  },
+  waitingIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  waitingText: {
+    fontSize: 16,
     color: "#888",
-    marginTop: 2,
   },
 });

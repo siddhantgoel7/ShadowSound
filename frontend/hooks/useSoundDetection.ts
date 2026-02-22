@@ -4,6 +4,7 @@ import {
     webSocketService,
     type Detection,
 } from "@/src/services/websocket.service";
+import { triggerHaptic } from "@/services/haptic.service";
 
 export interface SoundDetectionState {
     /** Mic permission status: null = pending, true = granted, false = denied */
@@ -79,6 +80,9 @@ export function useSoundDetection(
                     const top = detections[0];
                     setLastDetection(top);
                     setRecentDetections((prev: Detection[]) => [top, ...prev].slice(0, MAX_RECENT));
+
+                    // 🔔 Haptic feedback for hearing-impaired users
+                    triggerHaptic(top.haptic_pattern, top.urgency);
                 }
             },
             // onConnectionChange callback
